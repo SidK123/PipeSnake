@@ -1,0 +1,8 @@
+prefix=/home/skuniset/PipeSnake/devel
+
+Name: PipeSnake
+Description: Description of PipeSnake
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 
