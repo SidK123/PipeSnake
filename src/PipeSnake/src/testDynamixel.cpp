@@ -9,12 +9,12 @@
   #include <stdlib.h>
   #include <stdio.h>
   #include "dynamixel_sdk.h"                                   // Uses DYNAMIXEL SDK library
-  #include "ros/ros.h"
+  // #include "ros/ros.h"
 
   //Defning the device name (on physical computer) and the baud rate of the communications.
-  #define dxl_id                   1
+  #define dxl_id                   3
   #define device_name              "/dev/ttyUSB0"
-  #define baudrate                 1000000
+  #define baudrate                 57600
   #define protocol_version         2.0
   
   //Define some of the more important addresses that we need to keep track of in our code.
@@ -23,6 +23,7 @@
   #define secondary_id_addr        12
   #define torque_enable_addr       64
   #define velocity_p_gain_addr     78
+  #define present_position_addr    132
   #define goal_current_addr        102
   #define goal_position_addr       116
 
@@ -32,8 +33,8 @@
   #define current_pos_ctrl_mode    5
   #define torque_disable           0
   #define moving_status_threshold  20
-  #define position_min             -150000
-  #define position_max             150000
+  #define position_min             0
+  #define position_max             4095
   #define esc_ascii_value          0x1b
 
   //The Dynamixel PortHandler is what is used to communicate with the Dynamixel and deals with opening, closing ports and setting the baudrates.
@@ -100,7 +101,7 @@
   }
 
   int readPresentPosition(uint8_t ID, uint32_t *pos, uint8_t *error){
-    return read4Byte(ID, goal_position_addr, pos, error);
+    return read4Byte(ID, present_position_addr, pos, error);
   }
 
   bool openPort(){
@@ -158,24 +159,26 @@
     dxl_comm_result = torqueEnable(dxl_id, &dxl_error);
     if(dxl_comm_result != COMM_SUCCESS || dxl_error != 0){
       printf("Communication failed!\n");
+      printf("%d", dxl_comm_result);
+      printf("\n");
+      printf("%d", dxl_error);
     }
     else{
       printf("Torque has been enabled.\n");
     }
-
+    int goal_position = position_min;
     while(1){
       printf("Press any key to continue! (or press ESC to quit!)\n");
       if(getch() == esc_ascii_value){
         break;
       }
       else{
-        dxl_comm_result = setGoalPosition(dxl_id, position_min, &dxl_error);
+        dxl_comm_result = setGoalPosition(dxl_id, goal_position, &dxl_error);
         if(dxl_comm_result != COMM_SUCCESS || dxl_error != 0){
           printf("Communication failed!\n");
         }
         else{
           printf("Goal position succesfully set!\n");
-          int goal_position = position_min;
           do{
             dxl_comm_result = readPresentPosition(dxl_id, (uint32_t*)&(dxl1_present_position), &dxl_error);
             if(dxl_comm_result != COMM_SUCCESS || dxl_error != 0){
@@ -185,6 +188,7 @@
               printf("Goal position:%03d, Present position:%03d\n", goal_position, dxl1_present_position);
             }
           }while(abs(goal_position-dxl1_present_position)>moving_status_threshold);
+	}
           if(goal_position == position_min){
             goal_position = position_max;
           }
@@ -192,7 +196,6 @@
             goal_position = position_min;
           }
         }  
-      }
     }
     dxl_comm_result = torqueDisable(dxl_id, &dxl_error);
     if(dxl_comm_result != COMM_SUCCESS || dxl_error != 0){

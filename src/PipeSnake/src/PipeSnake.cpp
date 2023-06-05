@@ -12,7 +12,18 @@
   #include "ros/ros.h"                                         // Uses ROS
 
   //Defning the device name (on physical computer) and the baud rate of the communications.
-  #define dxl_id                   1
+  #define dxl1                     1
+  #define dxl2                     2
+  #define dxl3                     3
+  #define dxl4                     4
+  #define dxl5                     5
+  #define dxl6                     6
+  #define dxl7                     7
+  #define dxl8                     8
+  #define dxl9                     9
+  #define dxl10                    10
+  #define dxl11                    11
+  #define dxl12                    12
   #define device_name              "/dev/ttyUSB0"
   #define baudrate                 1000000
   #define protocol_version         2.0
@@ -24,6 +35,7 @@
   #define torque_enable_addr       64
   #define velocity_p_gain_addr     78
   #define goal_current_addr        102
+  #define goal_velocity_addr       104
   #define goal_position_addr       116
 
   //Define some of the important values and what they mean.
@@ -95,6 +107,18 @@
     return write1Byte(ID, operating_mode_addr, mode, error);
   }
 
+  int setVelocityControl(uint8_t ID, uint8_t *error){
+    return setOpMode(ID, 2, error);
+  }
+
+  int setCurrentBasedPosControl(uint8_t ID, uint8_t *error){
+    return setOpMode(ID, 5, error);
+  }
+
+  int setGoalVelocity(uint8_t ID, uint8_t vel, uint8_t *error){
+    return write4Byte(ID, goal_velocity_addr, vel, error);
+  }
+
   int setGoalPosition(uint8_t ID, uint32_t pos, uint8_t *error){
     return write4Byte(ID, goal_position_addr, pos, error);
   }
@@ -153,5 +177,14 @@
       getch();
       return 0;
     }
-    
+
+    for(int i = 1; i < 13; i++){
+        if(i % 2 == 0){
+          setVelocityControl(i, &dxl_error);
+        }
+        else{
+          setCurrentBasedPosControl(i, &dxl_error);
+        }
+    }
+
   }
