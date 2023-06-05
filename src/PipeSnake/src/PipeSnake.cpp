@@ -9,7 +9,6 @@
   #include <stdlib.h>
   #include <stdio.h>
   #include "dynamixel_sdk.h"                                   // Uses DYNAMIXEL SDK library
-  #include "ros/ros.h"                                         // Uses ROS
 
   //Defning the device name (on physical computer) and the baud rate of the communications.
   #define dxl1                     1
@@ -25,7 +24,7 @@
   #define dxl11                    11
   #define dxl12                    12
   #define device_name              "/dev/ttyUSB0"
-  #define baudrate                 1000000
+  #define baudrate                 57600
   #define protocol_version         2.0
   
   //Define some of the more important addresses that we need to keep track of in our code.
@@ -44,8 +43,8 @@
   #define current_pos_ctrl_mode    5
   #define torque_disable           0
   #define moving_status_threshold  20
-  #define position_min             -150000
-  #define position_max             150000
+  #define position_min             0
+  #define position_max             4095
   #define esc_ascii_value          0x1b
 
   //The Dynamixel PortHandler is what is used to communicate with the Dynamixel and deals with opening, closing ports and setting the baudrates.
@@ -95,12 +94,24 @@
     return packetHandler->read4ByteTxRx(portHandler, ID, address, data, error);
   }
 
-  int torqueDisable(uint8_t ID, uint8_t *error){
-    return write1Byte(ID, torque_enable_addr, torque_disable, error);
+  void torqueDisable(uint8_t ID, uint8_t *error){
+    int dxl_comm_result = write1Byte(ID, torque_enable_addr, torque_disable, error);
+    if(dxl_comm_result != COMM_SUCCESS || *error != 0){
+          printf("Communication failed!\n");
+    }
+    else{
+          printf("Torque disabled.\n");
+    }
   }
 
-  int torqueEnable(uint8_t ID, uint8_t *error){
-    return write1Byte(ID, torque_enable_addr, torque_enable, error);
+  void torqueEnable(uint8_t ID, uint8_t *error){
+    int dxl_comm_result = write1Byte(ID, torque_enable_addr, torque_enable, error);
+    if(dxl_comm_result != COMM_SUCCESS || *error != 0){
+      printf("Communication failed.\n");
+    }
+    else{
+      printf("Torque enabled.\n");
+    }
   }
 
   int setOpMode(uint8_t ID, uint8_t mode, uint8_t *error){
@@ -108,35 +119,83 @@
   }
 
   int setVelocityControl(uint8_t ID, uint8_t *error){
-    return setOpMode(ID, 2, error);
+    int dxl_comm_result = setOpMode(ID, velocity_mode, error);
+    if(dxl_comm_result != COMM_SUCCESS || *error != 0){
+      printf("Communication failed.\n");
+    }
+    else{
+      printf("Velocity control set.\n");
+    }
   }
 
-  int setCurrentBasedPosControl(uint8_t ID, uint8_t *error){
-    return setOpMode(ID, 5, error);
+  void setCurrentBasedPosControl(uint8_t ID, uint8_t *error){
+    int dxl_comm_result = setOpMode(ID, current_pos_ctrl_mode, error);
+    if(dxl_comm_result != COMM_SUCCESS || *error != 0){
+      printf("Communication failed.\n");
+    }
+    else{
+      printf("Current based position control set.\n");
+    }
   }
 
-  int setGoalVelocity(uint8_t ID, uint8_t vel, uint8_t *error){
-    return write4Byte(ID, goal_velocity_addr, vel, error);
+  void setGoalVelocity(uint8_t ID, uint32_t vel, uint8_t *error){
+    int dxl_comm_result = write4Byte(ID, goal_velocity_addr, vel, error);
+    if(dxl_comm_result != COMM_SUCCESS || *error != 0){
+        printf("Communication failed.\n");
+      }
+      else{
+        printf("Goal Velocity set.\n");
+      }
   }
 
-  int setGoalPosition(uint8_t ID, uint32_t pos, uint8_t *error){
-    return write4Byte(ID, goal_position_addr, pos, error);
+  void setGoalPosition(uint8_t ID, uint32_t pos, uint8_t *error){
+    int dxl_comm_result = write4Byte(ID, goal_position_addr, pos, error);
+    if(dxl_comm_result != COMM_SUCCESS || *error != 0){
+      printf("Communication failed.\n");
+    }
+    else{
+      printf("Goal Velocity set.\n");
+    }
+  }
+
+  void setGoalCurrent(uint8_t ID, uint32_t curr, uint8_t *error){
+    int dxl_comm_result = write2Byte(ID, goal_current_addr, curr, error);
+    if(dxl_comm_result != COMM_SUCCESS || *error != 0){
+      printf("Communication failed.\n");
+    }
+    else{
+      printf("Goal current set.\n");
+    }
   }
 
   int readPresentPosition(uint8_t ID, uint32_t *pos, uint8_t *error){
     return read4Byte(ID, goal_position_addr, pos, error);
   }
 
-  bool openPort(){
-    return (portHandler->openPort());
+  void openPort(){
+    if((portHandler->openPort())){
+      printf("Succeeded to open the port!\n");
+    }
+    else{
+      printf("Failed to open the port\n");
+      printf("Press any key to terminate...\n");
+      getch();
+    }
   }
 
   void closePort(){
     return (portHandler->closePort());
   }
 
-  bool setBaudRate(int baud_rate){
-    return portHandler->setBaudRate(baud_rate);
+  void setBaudRate(int baud_rate){
+    if(portHandler->setBaudRate(baud_rate)){
+      printf("Succeeded to change the baudrate!\n");
+    }
+    else{
+      printf("Failed to change the baudrate.\n");
+      printf("Press any to terminate...\n");
+      getch();
+    }
   }
 
   int main(){
@@ -158,33 +217,37 @@
     int32_t dxl1_present_position = 0;               // Present position
     uint8_t dxl2_led_value_read;                     // Dynamixel LED value for read
 
-    if(openPort()){
-      printf("Succeeded to open the port!\n");
-    }
-    else{
-      printf("Failed to open the port\n");
-      printf("Press any key to terminate...\n");
-      getch();
-      return 0;
+    openPort();
+    setBaudRate(baudrate);
+    torqueEnable(3, &dxl_error);
+
+    torqueEnable(4, &dxl_error);
+    torqueEnable(5, &dxl_error);
+
+    for(uint8_t i = 3; i < 6; i++){
+      setGoalVelocity(i, 50, &dxl_error);
     }
 
-    if(setBaudRate(baudrate)){
-      printf("Succeeded to change the baudrate!\n");
-    }
-    else{
-      printf("Failed to change the baudrate.\n");
-      printf("Press any to terminate...\n");
-      getch();
-      return 0;
-    }
+    setCurrentBasedPosControl(12, &dxl_error);
+    setGoalCurrent(12, 75, &dxl_error);
+    
 
-    for(int i = 1; i < 13; i++){
-        if(i % 2 == 0){
-          setVelocityControl(i, &dxl_error);
+    torqueEnable(12, &dxl_error);
+    setGoalPosition(12, 3002, &dxl_error);
+    
+
+    while(1){
+      if(getch() == esc_ascii_value){
+        torqueDisable(3, &dxl_error);
+        torqueDisable(4, &dxl_error);
+        torqueDisable(5, &dxl_error);
+        torqueDisable(12, &dxl_error);
+        torqueDisable(8, &dxl_error);
+        closePort();
+        return 0;
         }
-        else{
-          setCurrentBasedPosControl(i, &dxl_error);
-        }
+      else{
+        continue;
+      }
     }
-
   }
