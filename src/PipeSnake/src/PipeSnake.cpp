@@ -8,6 +8,7 @@
 
   #include <stdlib.h>
   #include <stdio.h>
+  //#include <ros/ros.h>
   #include "dynamixel_sdk.h"                                   // Uses DYNAMIXEL SDK library
 
   //Defning the device name (on physical computer) and the baud rate of the communications.
@@ -313,6 +314,8 @@
       setGoalCurrent(joint_actuators[i], 75, &dxl_error);
     }
 
+    int goalPositions[4] = {1626, 2722, 2933, 2933};
+
     torqueEnable(12, &dxl_error);
     setGoalPosition(12, 2933, &dxl_error);
 
@@ -325,7 +328,12 @@
     torqueEnable(2, &dxl_error);
     setGoalPosition(2, 1626, &dxl_error);
     
-
+    /*for(int j = 0; j < 1000; j+=10){
+    for(int i = 0; i < 4; i++){
+      goalPositions[i] = goalPositions[i] + 1;
+      setGoalPosition(joint_actuators[i], goalPositions[i], &dxl_error);
+    }
+    }*/
     while(1){
       if(getch() == esc_ascii_value){
         torqueDisable(3, &dxl_error);
