@@ -114,11 +114,31 @@
     }
   }
 
+  void torqueEnableRoll(uint8_t ID, uint8_t *error){
+    int dxl_comm_result = write1Byte(ID, 512, torque_enable, error);
+    if(dxl_comm_result != COMM_SUCCESS || *error != 0){
+      printf("Communication failed.\n");
+    }
+    else{
+      printf("Torque enabled.\n");
+    }
+  }
+
+  void torqueDisableRoll(uint8_t ID, uint8_t *error){
+    int dxl_comm_result = write1Byte(ID, 512, torque_disable, error);
+    if(dxl_comm_result != COMM_SUCCESS || *error != 0){
+      printf("Communication failed.\n");
+    }
+    else{
+      printf("Torque disabled.\n");
+    }
+  }
+
   int setOpMode(uint8_t ID, uint8_t mode, uint8_t *error){
     return write1Byte(ID, operating_mode_addr, mode, error);
   }
 
-  int setVelocityControl(uint8_t ID, uint8_t *error){
+  void setVelocityControl(uint8_t ID, uint8_t *error){
     int dxl_comm_result = setOpMode(ID, velocity_mode, error);
     if(dxl_comm_result != COMM_SUCCESS || *error != 0){
       printf("Communication failed.\n");
@@ -154,7 +174,17 @@
       printf("Communication failed.\n");
     }
     else{
-      printf("Goal Velocity set.\n");
+      printf("Goal Position set.\n");
+    }
+  }
+
+  void setGoalPositionRoll(uint8_t ID, uint32_t pos, uint8_t *error){
+    int dxl_comm_result = write4Byte(ID, 564, pos, error);
+    if(dxl_comm_result != COMM_SUCCESS || *error != 0){
+      printf("Communication failed.\n");
+    }
+    else{
+      printf("Goal Position set.\n");
     }
   }
 
@@ -166,6 +196,27 @@
     else{
       printf("Goal current set.\n");
     }
+  }
+
+  void rotate90(uint8_t ID, uint8_t *error){
+    int dxl_comm_result = write4Byte(ID, 564, -243856, error);
+    if(dxl_comm_result != COMM_SUCCESS || *error != 0){
+      printf("Communication failed.\n");
+    }
+    else{
+      printf("Rotated 90 degrees.\n");
+    }
+  }
+
+  void rotate90Opp(uint8_t ID, uint8_t *error){
+    int dxl_comm_result = write4Byte(ID, 564, 0, error);
+    if(dxl_comm_result != COMM_SUCCESS || *error != 0){
+      printf("Communication failed.\n");
+    }
+    else{
+      printf("Rotated 90 degrees in opposite direction.\n");
+    }
+
   }
 
   int readPresentPosition(uint8_t ID, uint32_t *pos, uint8_t *error){
@@ -217,23 +268,62 @@
     int32_t dxl1_present_position = 0;               // Present position
     uint8_t dxl2_led_value_read;                     // Dynamixel LED value for read
 
+    int wheel_motors[6] = {3, 4, 5, 6, 9, 11};
+    int joint_actuators[4] = {2, 8, 10, 12};
+
+    /*
+    Wheel positions:
+    Wheel 3: Upper left.
+    Wheel 4: Lower right of left section.
+    Wheel 5: Lower left of left section.
+    Wheel 6: Lower left of right section.
+    Wheel 9: Upper right.
+    Wheel 11: Lower right of right section.
+    */
+
+    /*
+    Joint actuator positions:
+    Joint 12: 2933 (Left up bend)
+    Joint 8: 2700 (Left connected to roll coupler)
+    Joint 10: 2933   (Right Up bend)
+    Joint 2: 1626    (Right connected to roll coupler)
+    */
+
     openPort();
     setBaudRate(baudrate);
-    torqueEnable(3, &dxl_error);
 
-    torqueEnable(4, &dxl_error);
-    torqueEnable(5, &dxl_error);
+    rotate90(1, &dxl_error);
+    torqueEnableRoll(1, &dxl_error);
+    rotate90Opp(1, &dxl_error);
 
-    for(uint8_t i = 3; i < 6; i++){
-      setGoalVelocity(i, 50, &dxl_error);
+
+    for(int i = 0; i < 6; i++){
+      torqueEnable(wheel_motors[i], &dxl_error);
     }
 
-    setCurrentBasedPosControl(12, &dxl_error);
-    setGoalCurrent(12, 75, &dxl_error);
-    
+    setGoalVelocity(5, -50, &dxl_error);
+    setGoalVelocity(4, -50, &dxl_error);
+    setGoalVelocity(3, 50, &dxl_error);
+    setGoalVelocity(6, -50, &dxl_error);
+    setGoalVelocity(9, 50, &dxl_error);
+    setGoalVelocity(11, -50, &dxl_error);
+
+    for(int i = 0; i < 4; i++){
+      setCurrentBasedPosControl(joint_actuators[i], &dxl_error);
+      setGoalCurrent(joint_actuators[i], 75, &dxl_error);
+    }
 
     torqueEnable(12, &dxl_error);
-    setGoalPosition(12, 3002, &dxl_error);
+    setGoalPosition(12, 2933, &dxl_error);
+
+    torqueEnable(8, &dxl_error);
+    setGoalPosition(8, 2722, &dxl_error);
+
+    torqueEnable(10, &dxl_error);
+    setGoalPosition(10, 2933, &dxl_error);
+    
+    torqueEnable(2, &dxl_error);
+    setGoalPosition(2, 1626, &dxl_error);
     
 
     while(1){
@@ -241,8 +331,14 @@
         torqueDisable(3, &dxl_error);
         torqueDisable(4, &dxl_error);
         torqueDisable(5, &dxl_error);
-        torqueDisable(12, &dxl_error);
+        torqueDisable(6, &dxl_error);
+        torqueDisable(9, &dxl_error);
+        torqueDisable(11, &dxl_error);
+        torqueDisable(2, &dxl_error);
         torqueDisable(8, &dxl_error);
+        torqueDisable(10, &dxl_error);
+        torqueDisable(12, &dxl_error);
+        torqueDisableRoll(1, &dxl_error);
         closePort();
         return 0;
         }
