@@ -1,2 +1,2 @@
-PipeSnake
+PipeSnake_Final
 -DCATKIN_DEVEL_PREFIX=/home/skuniset/PipeSnake/devel -DCMAKE_INSTALL_PREFIX=/home/skuniset/PipeSnake/install -G Unix Makefiles

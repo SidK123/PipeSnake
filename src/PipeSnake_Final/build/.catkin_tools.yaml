@@ -1,0 +1,6 @@
+devel_space: /home/skuniset/PipeSnake/src/PipeSnake_Final/devel
+install: false
+install_space: /home/skuniset/PipeSnake/src/PipeSnake_Final/install
+profile: default
+source_space: /home/skuniset/PipeSnake/src/PipeSnake_Final/src
+workspace: /home/skuniset/PipeSnake/src/PipeSnake_Final
