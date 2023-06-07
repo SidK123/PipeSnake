@@ -310,9 +310,9 @@
     openPort();
     setBaudRate(baudrate);
 
-    /*rotate90(1, &dxl_error);
+    //rotate90(1, &dxl_error);
     torqueEnableRoll(1, &dxl_error);
-    rotate90Opp(1, &dxl_error);*/
+    setGoalPosition(1, 100, &dxl_error);
 
     for(int i = 0; i < 6; i++){
       torqueEnable(wheel_motors[i], &dxl_error);
@@ -363,6 +363,14 @@
       setGoalVelocity(6, 260*(msg->axes[1]), &dxl_error);    
       setGoalVelocity(9, -260*(msg->axes[1]), &dxl_error);    
       setGoalVelocity(11, 260*(msg->axes[1]), &dxl_error);    
+    }
+    else if(msg->buttons[0] == 1){
+      setGoalPosition(10, 2716-100, &dxl_error); //Expands the joint so that it is able to rotate.
+      setGoalPosition(1, 300, &dxl_error); //Change 300 to whatever the rotated value is
+    }
+    else if(msg->buttons[3] == 1){
+      setGoalPosition(1, 100, &dxl_error); //Change 100 to whatever the original value is
+      setGoalPosition(10, 2716, &dxl_error); //Contracts the joint to its original position
     }
     else if(msg->axes[3] > 0.1 || msg->axes[3] < -0.1){
       printf("Contracting and expanding!\n");
