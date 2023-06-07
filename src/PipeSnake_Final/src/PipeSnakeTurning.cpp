@@ -301,7 +301,7 @@
 
     /*
     Joint actuator positions:
-    Joint 12: -1251 (Left up bend)
+    Joint 12: 1268 (Left up bend)
     Joint 8: 433 (Left connected to roll coupler)
     Joint 10: 2716   (Right Up bend)
     Joint 2: 785    (Right connected to roll coupler)
@@ -333,7 +333,7 @@
     int goalPositions[4] = {1626, 2722, 2933, 2933};
 
     torqueEnable(12, &dxl_error);
-    setGoalPosition(12, -1251, &dxl_error); //Decreasing this expands it, makes it closer to 180 degrees, increasing it contracts it.
+    setGoalPosition(12, 1268, &dxl_error); //Decreasing this expands it, makes it closer to 180 degrees, increasing it contracts it.
 
     torqueEnable(8, &dxl_error);
     setGoalPosition(8, 433, &dxl_error); //Decreasing this contracts it, makes it closer to 0 degrees.
