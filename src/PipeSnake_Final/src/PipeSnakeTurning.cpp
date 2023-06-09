@@ -307,17 +307,17 @@
     Joint 2: 785    (Right connected to roll coupler)
     */
 
+    //Opening port and setting the baudrate to what we want.
     openPort();
     setBaudRate(baudrate);
 
-    /*rotate90(1, &dxl_error);
-    torqueEnableRoll(1, &dxl_error);
-    rotate90Opp(1, &dxl_error);*/
-
+    //Enable the torque of all of the wheel motors.
     for(int i = 0; i < 6; i++){
       torqueEnable(wheel_motors[i], &dxl_error);
     }
 
+    //Set the goal velocities to what they need to be. Note that the wheels on the upper side of the robot turn in the opposite direction
+    //to the wheels on the bottom, which is what we need geometrically, as the wheels on top are also pushing against the pipe wall.
     setGoalVelocity(5, -50, &dxl_error);
     setGoalVelocity(4, -50, &dxl_error);
     setGoalVelocity(3, +50, &dxl_error);
@@ -325,12 +325,14 @@
     setGoalVelocity(9, -50, &dxl_error);
     setGoalVelocity(11, 50, &dxl_error);
 
+    //We enable current based position control and set the maximum current that the actuator shouldn't exceed to get back to the goal position.
     for(int i = 0; i < 4; i++){
       setCurrentBasedPosControl(joint_actuators[i], &dxl_error);
-      setGoalCurrent(joint_actuators[i], 75, &dxl_error);
+      setGoalCurrent(joint_actuators[i], 75, &dxl_error); 
     }
 
-    int goalPositions[4] = {1626, 2722, 2933, 2933};
+    //These are the goal positions of our actuators.
+    int goalPositions[4] = {785, 433, 2716, 1268};
 
     torqueEnable(12, &dxl_error);
     setGoalPosition(12, 1268, &dxl_error); //Decreasing this expands it, makes it closer to 180 degrees, increasing it contracts it.
@@ -344,33 +346,21 @@
     torqueEnable(2, &dxl_error);
     setGoalPosition(2, 785, &dxl_error); //Decreasing this contracts it, makes it closer to 0 degrees.
     
-    /*for(int j = 0; j < 1000; j+=10){
-    for(int i = 0; i < 4; i++){
-      goalPositions[i] = goalPositions[i] + 1;
-      setGoalPosition(joint_actuators[i], goalPositions[i], &dxl_error);
-    }
-    }*/
     printf("All joint actuators and motors have been initialized.");
   }
 
   void JoyStickCallback(const sensor_msgs::Joy::ConstPtr& msg){
     uint8_t dxl_error = 0;
-    if(msg->axes[1] > 0.1 || msg->axes[1] < -0.1){
-      printf("Slowdown or speedup!\n");
-      setGoalVelocity(3, 260*(msg->axes[1]), &dxl_error);    
-      setGoalVelocity(4, -260*(msg->axes[1]), &dxl_error);  
-      setGoalVelocity(5, -260*(msg->axes[1]), &dxl_error);    
-      setGoalVelocity(6, 260*(msg->axes[1]), &dxl_error);    
-      setGoalVelocity(9, -260*(msg->axes[1]), &dxl_error);    
-      setGoalVelocity(11, 260*(msg->axes[1]), &dxl_error);    
-    }
-    else if(msg->axes[3] > 0.1 || msg->axes[3] < -0.1){
+
+    //Joystick to contrl the joint angles. Moving the joystick up leads to expansion and moing it down contracts it. This allows us to get through a pipe of any radius.
+    if(msg->axes[3] > 0.1 || msg->axes[3] < -0.1){
       printf("Contracting and expanding!\n");
       setGoalPosition(12, 1268-200*(msg->axes[3]), &dxl_error);        
       setGoalPosition(10,  2716-200*(msg->axes[3]), &dxl_error);     
       setGoalPosition(8, 433+200*(msg->axes[3]), &dxl_error);        
       setGoalPosition(2,  785+200*(msg->axes[3]), &dxl_error);                   
     }
+    //If we hit A, all of our motors disable.
     else if(msg->buttons[1] == 1){
       printf("A has been pressed!\n");
       torqueDisable(3, &dxl_error);
@@ -388,7 +378,7 @@
     }
   }
 
-
+  //Initialization of ROS node to listen to joystick messages and calls back the function that interprets what to do with the joystick commands.
   int main(int argc, char **argv){
     initializePipeSnake();
     ros::init(argc, argv, "Joy_Listener");
@@ -397,3 +387,5 @@
     ros::spin();
     return 0;
   }
+
+

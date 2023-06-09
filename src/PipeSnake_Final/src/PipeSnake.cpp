@@ -238,7 +238,6 @@
     else{
       printf("Rotated 90 degrees in opposite direction.\n");
     }
-
   }
 
   int readPresentPosition(uint8_t ID, uint32_t *pos, uint8_t *error){
@@ -310,14 +309,17 @@
     openPort();
     setBaudRate(baudrate);
 
-    //rotate90(1, &dxl_error);
-    torqueEnableRoll(1, &dxl_error);
-    setGoalPosition(1, 100, &dxl_error);
+    //Enabling the torque of the roll coupling actuator. 
+    /*torqueEnableRoll(1, &dxl_error);
+    setGoalPosition(1, 100, &dxl_error); //Replace 100 with whatever should be the original position of the front part of the PipeSnake.*/
 
+    //Enable the torque of all of the wheel motors.
     for(int i = 0; i < 6; i++){
       torqueEnable(wheel_motors[i], &dxl_error);
     }
 
+
+    //Set the goal velocities to what they need to be. +/- 50 seems to the be the best value.
     setGoalVelocity(5, -50, &dxl_error);
     setGoalVelocity(4, -50, &dxl_error);
     setGoalVelocity(3, +50, &dxl_error);
@@ -325,12 +327,16 @@
     setGoalVelocity(9, -50, &dxl_error);
     setGoalVelocity(11, 50, &dxl_error);
 
+    //Set current based position control and set the goal current not too high.
     for(int i = 0; i < 4; i++){
       setCurrentBasedPosControl(joint_actuators[i], &dxl_error);
       setGoalCurrent(joint_actuators[i], 75, &dxl_error);
     }
 
-    int goalPositions[4] = {1626, 2722, 2933, 2933};
+    //Set all of the goal positions of the joint actuators. These are currently hard-coded, I need to make them easily changed based on the
+    //calibrated positions.
+
+    int goalPositions[4] = {785, 433, 2716, 1268};
 
     torqueEnable(12, &dxl_error);
     setGoalPosition(12, 1268, &dxl_error); //Decreasing this expands it, makes it closer to 180 degrees, increasing it contracts it.
@@ -344,17 +350,13 @@
     torqueEnable(2, &dxl_error);
     setGoalPosition(2, 785, &dxl_error); //Decreasing this contracts it, makes it closer to 0 degrees.
     
-    /*for(int j = 0; j < 1000; j+=10){
-    for(int i = 0; i < 4; i++){
-      goalPositions[i] = goalPositions[i] + 1;
-      setGoalPosition(joint_actuators[i], goalPositions[i], &dxl_error);
-    }
-    }*/
     printf("All joint actuators and motors have been initialized.");
   }
 
   void JoyStickCallback(const sensor_msgs::Joy::ConstPtr& msg){
     uint8_t dxl_error = 0;
+    
+    //If you use the left joystick, you can adjust the speeds of all of the motors controlling the wheels.
     if(msg->axes[1] > 0.1 || msg->axes[1] < -0.1){
       printf("Slowdown or speedup!\n");
       setGoalVelocity(3, 260*(msg->axes[1]), &dxl_error);    
@@ -364,14 +366,22 @@
       setGoalVelocity(9, -260*(msg->axes[1]), &dxl_error);    
       setGoalVelocity(11, 260*(msg->axes[1]), &dxl_error);    
     }
+
+    //If you hit X, the front is able to rotate 90 degrees. We lift the front wheel and then we rotate it, as
+    //the front wheel is a non-omni-wheel.
     else if(msg->buttons[0] == 1){
+      printf("Rotating front 90 degrees.");
       setGoalPosition(10, 2716-100, &dxl_error); //Expands the joint so that it is able to rotate.
       setGoalPosition(1, 300, &dxl_error); //Change 300 to whatever the rotated value is
     }
+    //If you hit Y, the front will revert to its original position and then the front wheel will go back to what it needs to be.
     else if(msg->buttons[3] == 1){
+      printf("Rotating back to original position.");
       setGoalPosition(1, 100, &dxl_error); //Change 100 to whatever the original value is
       setGoalPosition(10, 2716, &dxl_error); //Contracts the joint to its original position
     }
+
+    //If you use the right joystick, you can expand and contract all of the joints and make it so that the robot can fit into a pipe of variable radius.
     else if(msg->axes[3] > 0.1 || msg->axes[3] < -0.1){
       printf("Contracting and expanding!\n");
       setGoalPosition(12, 1268-200*(msg->axes[3]), &dxl_error);        
@@ -379,6 +389,8 @@
       setGoalPosition(8, 433+200*(msg->axes[3]), &dxl_error);        
       setGoalPosition(2,  785+200*(msg->axes[3]), &dxl_error);                   
     }
+
+    //Turn off all of the motors by disabing their torque.
     else if(msg->buttons[1] == 1){
       printf("A has been pressed!\n");
       torqueDisable(3, &dxl_error);
@@ -395,8 +407,6 @@
       closePort();
     }
   }
-
-
   int main(int argc, char **argv){
     initializePipeSnake();
     ros::init(argc, argv, "Joy_Listener");
@@ -405,3 +415,5 @@
     ros::spin();
     return 0;
   }
+
+
