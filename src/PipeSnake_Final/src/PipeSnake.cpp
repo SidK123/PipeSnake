@@ -327,6 +327,14 @@
     setGoalVelocity(9, -50, &dxl_error);
     setGoalVelocity(11, 50, &dxl_error);
 
+    /*setGoalVelocity(5, 50, &dxl_error);
+    setGoalVelocity(4, 50, &dxl_error);
+    setGoalVelocity(3, -50, &dxl_error);
+    setGoalVelocity(6, -50, &dxl_error);
+    setGoalVelocity(9, 50, &dxl_error);
+    setGoalVelocity(11, -50, &dxl_error);*/
+
+
     //Set current based position control and set the goal current not too high.
     for(int i = 0; i < 4; i++){
       setCurrentBasedPosControl(joint_actuators[i], &dxl_error);
@@ -336,19 +344,21 @@
     //Set all of the goal positions of the joint actuators. These are currently hard-coded, I need to make them easily changed based on the
     //calibrated positions.
 
+    //These positions are for 12 inch pipe.
     int goalPositions[4] = {785, 433, 2716, 1268};
 
+    //This positions are for 16 inch pipe.
     torqueEnable(12, &dxl_error);
-    setGoalPosition(12, 1268, &dxl_error); //Decreasing this expands it, makes it closer to 180 degrees, increasing it contracts it.
+    setGoalPosition(12, 1581, &dxl_error); //Decreasing this expands it, makes it closer to 180 degrees, increasing it contracts it.
 
     torqueEnable(8, &dxl_error);
-    setGoalPosition(8, 433, &dxl_error); //Decreasing this contracts it, makes it closer to 0 degrees.
+    setGoalPosition(8, 273, &dxl_error); //Decreasing this contracts it, makes it closer to 0 degrees.
 
     torqueEnable(10, &dxl_error);
-    setGoalPosition(10, 2716, &dxl_error); //Decreasing this expands it, makes it closer to 180 degrees, increasing it contracts it.
+    setGoalPosition(10, 3078, &dxl_error); //Decreasing this expands it, makes it closer to 180 degrees, increasing it contracts it.
     
     torqueEnable(2, &dxl_error);
-    setGoalPosition(2, 785, &dxl_error); //Decreasing this contracts it, makes it closer to 0 degrees.
+    setGoalPosition(2, 528, &dxl_error); //Decreasing this contracts it, makes it closer to 0 degrees.
     
     printf("All joint actuators and motors have been initialized.");
   }
@@ -415,5 +425,3 @@
     ros::spin();
     return 0;
   }
-
-
